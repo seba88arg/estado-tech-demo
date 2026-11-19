@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Estado Tech · Demo</title>
+<meta name="description" content="Demo con datos de ejemplo de una extensión de Chrome que muestra el estado en Tech de cada ticket derivado en Jira.">
+<meta name="robots" content="noindex">
+<style>
+:root{
+  --bg:#f4f5f7;--panel:#ffffff;--panel2:#f7f8f9;--ink:#172b4d;--ink2:#44546f;--muted:#626f86;--line:#dcdfe4;
+  --accent:#0c66e4;--accent-soft:#e9f2ff;--ok:#1f845a;--ok-soft:#dcfff1;--prog:#0055cc;--prog-soft:#e9f2ff;
+  --warn:#a54800;--warn-soft:#fff3eb;--gray:#44546f;--gray-soft:#f1f2f4;--bad:#ae2e24;--bad-soft:#ffeceb;--yel:#946f00;
+  --sprint:#0c66e4;--shadow:0 10px 30px rgba(9,30,66,.14);
+}
+:root[data-theme="dark"]{
+  --bg:#161a1d;--panel:#1d2125;--panel2:#22272b;--ink:#dee4ea;--ink2:#b6c2cf;--muted:#8c9bab;--line:#2c333a;
+  --accent:#579dff;--accent-soft:#1c2b41;--ok:#4bce97;--ok-soft:#1c3329;--prog:#85b8ff;--prog-soft:#1c2b41;
+  --warn:#fea362;--warn-soft:#38291e;--gray:#b6c2cf;--gray-soft:#2c333a;--bad:#fd9891;--bad-soft:#42221f;--yel:#f5cd47;
+  --sprint:#388bff;--shadow:0 10px 30px rgba(0,0,0,.5);color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+.wrap{max-width:1280px;margin:0 auto;padding-block:30px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.brand{font-weight:700;color:var(--ink2);text-decoration:none}
+.pill{background:var(--warn-soft);color:var(--warn);font-weight:700;font-size:12.5px;padding:4px 10px;border-radius:999px}
+h1{font-size:clamp(26px,4vw,38px);line-height:1.12;margin:0 0 10px;text-wrap:balance}
+.lead{font-size:16.5px;color:var(--ink2);max-width:66ch;margin:0 0 24px}
+/* app */
+.app{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+.hdr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--panel2)}
+.ttl{margin-right:auto;min-width:0}.ttl b{font-size:18px;display:block}.ttl small{color:var(--muted);font-size:12px}
+.ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+input[type=search],select{font:inherit;font-size:13px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:7px 10px}
+input[type=search]{width:220px;max-width:100%}
+label.chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2);cursor:pointer}
+.btn{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;padding:7px 11px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--panel2)}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .btn.primary{color:#0b1220}
+.btn:focus-visible,.tile:focus-visible,.agent:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.spin{width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;display:inline-block;animation:sp .7s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+.body{padding:12px 14px}
+.agents{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--ink2)}
+.agent{font:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:var(--panel);color:var(--ink2);border-radius:999px;padding:4px 11px;cursor:pointer}
+.agent[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.tiles{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 10px}
+.tile{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink2);border-radius:8px;padding:9px 14px;cursor:pointer;display:flex;align-items:baseline;gap:7px;font-size:14px}
+.tile b{font-size:19px;color:var(--ink)}.tile[data-c="none"] b{color:var(--yel)}.tile[data-c="work"] b{color:var(--prog)}.tile[data-c="prod"] b{color:var(--ok)}.tile[data-c="done"] b{color:var(--muted)}
+.tile[aria-pressed="true"]{border:2px solid var(--accent);padding:8px 13px}
+.note{font-size:12px;color:var(--muted);margin-bottom:10px}
+.tbl{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.th,.tr{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,.55fr) minmax(0,.5fr) minmax(0,1.9fr);gap:14px;padding:12px 12px}
+.th{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
+.th .sorted{color:var(--accent)}
+.tr{border-bottom:1px solid var(--line)}.tr:last-child{border-bottom:0}
+.lnk{color:var(--accent);text-decoration:none;font-weight:600;cursor:pointer}.lnk:hover{text-decoration:underline}
+.sumg{margin:2px 0}.sub{font-size:12px;color:var(--muted)}
+.sim{font-size:12px;color:var(--ink2);margin-top:4px}.sim .lnk{font-weight:500}
+.find{font-size:12px;margin-top:4px;display:inline-block}
+.chipst{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:2px 8px;border-radius:4px}
+.s-der{background:var(--prog-soft);color:var(--prog)}.s-ana{background:var(--warn-soft);color:var(--warn)}.s-res{background:var(--ok-soft);color:var(--ok)}.s-des{background:var(--gray-soft);color:var(--muted)}
+.tc{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:var(--panel2)}
+.tc+.tc{margin-top:8px}.tc.sprint{border-left:3px solid var(--sprint)}
+.tc-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tc-who{margin-left:auto;font-size:12px;color:var(--muted)}
+.t-backlog{background:var(--gray-soft);color:var(--gray)}.t-curso{background:var(--prog-soft);color:var(--prog)}.t-rev{background:var(--warn-soft);color:var(--warn)}.t-ok{background:var(--ok-soft);color:var(--ok)}
+.spr{font-size:11.5px;font-weight:700;background:var(--sprint);color:#fff;border-radius:4px;padding:2px 7px}
+.mini{display:flex;gap:6px;flex-wrap:wrap;margin:5px 0}
+.mini span{font-size:11.5px;font-weight:600;border:1px solid var(--line);border-radius:4px;padding:1px 6px;color:var(--ink2)}
+.mini .pH{color:var(--bad);border-color:var(--bad)}.mini .pM{color:var(--warn);border-color:var(--warn)}.mini .pL{color:var(--prog);border-color:var(--prog)}
+.rel{font-size:12px;color:var(--muted)}
+.none{font-size:12.5px;color:var(--yel);font-weight:600}
+.empty{padding:26px;text-align:center;color:var(--muted)}
+.lbl{display:none}
+@media (max-width:820px){
+  .th{display:none}
+  .tr{grid-template-columns:minmax(0,1fr);gap:8px}
+  .lbl{display:inline;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-right:6px}
+  input[type=search]{width:100%}
+  .ctl{width:100%}
+}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:8px;font-size:13.5px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px);z-index:10}
+.toast.show{opacity:1}
+.case{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:40px}
+@media (max-width:820px){.case{grid-template-columns:minmax(0,1fr)}}
+.case section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;min-width:0}
+.case h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.case p,.case li{color:var(--ink2);margin:0}.case ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.stack{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
+.stack span{font-size:12.5px;font-weight:600;color:var(--ink2);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 11px}
+footer{margin-top:36px;font-size:13px;color:var(--muted)}footer a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="brand" href="https://sebadata.netlify.app/">Seba Data</a><span class="pill">Demo · Datos de ejemplo</span></div>
+  <h1>Estado Tech: qué pasó con cada ticket que derivamos</h1>
+  <p class="lead">Una extensión de Chrome para un equipo de Análisis de Producto. Junta en una sola pantalla los tickets del equipo, los tickets de Tech vinculados y en qué estado están. Además avisa cuando un ticket se parece a otro ya cargado.</p>
+
+  <div class="app" role="region" aria-label="Estado Tech (demo)">
+    <div class="hdr">
+      <div class="ttl"><b>Estado Tech</b><small>Conectado como Ana Pérez · Proyecto AP</small></div>
+      <div class="ctl">
+        <input type="search" id="q" placeholder="Buscar por clave, resumen o estado" aria-label="Buscar">
+        <label class="chk"><input type="checkbox" id="canc"> Mostrar cancelados</label>
+        <label class="chk" for="sort">Ordenar por</label>
+        <select id="sort"><option value="upd">Actualizado</option><option value="tech">Estado Tech</option><option value="key">Ticket</option><option value="agent">Agente</option></select>
+        <button class="btn" id="dir" type="button" aria-label="Invertir orden">▲</button>
+        <button class="btn" id="theme" type="button">☾ Oscuro</button>
+        <button class="btn" id="cfg" type="button" aria-label="Configuración">⚙</button>
+        <button class="btn" id="xls" type="button">Exportar Excel</button>
+        <button class="btn primary" id="refresh" type="button">Actualizar</button>
+      </div>
+    </div>
+    <div class="body">
+      <div class="agents" id="agents"></div>
+      <div class="tiles" id="tiles"></div>
+      <div class="note">ⓘ "Puede ser similar a": el % de parecido compara el texto de los tickets y no siempre se trata del mismo error.</div>
+      <div class="tbl">
+        <div class="th"><span>Ticket AP</span><span>Agente</span><span>Estado AP</span><span id="thTech">Ticket(s) de Tech y estado</span></div>
+        <div id="rows"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="case">
+    <section><h3>El problema</h3><p>El equipo de Análisis de Producto deriva tickets a Tech, y Tech los toma en proyectos distintos según la célula. Para saber si uno ya estaba en producción había que abrir cada ticket, seguir el vínculo y mirar el estado. Encima, el mismo error a veces se cargaba dos veces.</p></section>
+    <section><h3>Qué hice</h3><ul>
+      <li>Lista de todos los tickets del equipo con sus tickets de Tech, estado, prioridad, célula, responsable y sprint.</li>
+      <li>Contadores que filtran: no tomados por Tech, en curso, en producción y finalizados.</li>
+      <li>Aviso de tickets parecidos según el texto, para no derivar dos veces lo mismo.</li>
+      <li>Filtro por agente, búsqueda, orden y exportación a Excel.</li>
+      <li>Se instala como extensión de Chrome, sin servidores ni costos.</li></ul></section>
+    <section><h3>Resultado</h3><p>Hoy la usa todo el equipo: 6 personas ven en una sola pantalla qué está listo para cerrar, qué sigue en Tech y qué todavía nadie tomó, sin abrir ticket por ticket.</p></section>
+  </div>
+  <div class="stack"><span>Extensión de Chrome</span><span>Jira Cloud</span><span>JavaScript</span><span>Similitud de texto</span><span>Exportación a Excel</span></div>
+  <footer>Demo con datos inventados: no se conecta a ningún Jira. Hecho por <a href="https://sebadata.netlify.app/">Seba Data</a>.</footer>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<script>
+const ME='Ana Pérez';
+const AGENTS=[ME,'Martín Ríos','Lucía Gómez','Diego Ferraro'];
+// [clave, resumen, agente, estado AP, actualizado(h), tech:[[clave, estado, prioridad, célula, responsable, act(h), sprint]]]
+const RAW=[
+ ['AP-1489','Portal | Reportes | Error al exportar el listado mensual de pagos',ME,'DERIVADA TECH',5,[['TEC-1172','BACKLOG','Medium','Célula QA','',5,'']]],
+ ['AP-1493','Portal | Reportes | Error al exportar el listado de pagos por fecha',ME,'DERIVADA TECH',5,[['TEC-1170','BACKLOG','Medium','Célula QA','',5,'']]],
+ ['AP-1406','Backoffice | Consultas | Error al consultar el historial de un cliente',ME,'DERIVADA TECH',288,[['TEC-882','COMPLETADO','Medium','Célula Datos','Valentina Soto',528,'']]],
+ ['AP-1337','Backoffice | Consultas | Error 1003 al consultar historial',ME,'DERIVADA TECH',1440,[['TEC-751','COMPLETADO','Medium','Desarrollo','Tomás Ibarra',24,'']]],
+ ['AP-1404','Portal | Auditoría no muestra registros pendientes de un cliente','Martín Ríos','DERIVADA TECH',48,[['TEC-909','EN CURSO','High','Célula Datos','Rocío Medina',120,'']]],
+ ['AP-1411','Backoffice | Error en rango de fechas en la consulta de movimientos',ME,'DESESTIMADA',600,[['TEC-978','EN CURSO','Medium','Desarrollo','Federico Paz',24,'Sprint 31']]],
+ ['AP-1452','App móvil | El botón de descarga no responde en algunos teléfonos','Lucía Gómez','DERIVADA TECH',30,[['TEC-1101','EN REVISIÓN','High','Célula Mobile','Iván Correa',6,'Sprint 32']]],
+ ['AP-1458','Portal | Agregar campo de observaciones al formulario de reclamos','Diego Ferraro','EN ANÁLISIS',72,[]],
+ ['AP-1461','Backoffice | Permisos: un perfil de consulta puede editar registros','Martín Ríos','DERIVADA TECH',20,[['TEC-1120','EN CURSO','High','Desarrollo','Federico Paz',3,'Sprint 32'],['TEC-1124','BACKLOG','Low','Célula QA','',20,'']]],
+ ['AP-1466','Portal | Importación de archivo CSV rechaza acentos','Lucía Gómez','DERIVADA TECH',96,[['TEC-1131','COMPLETADO','Medium','Célula Integraciones','Paula Herrera',30,'']]],
+ ['AP-1470','Portal | Reportes | Totales del mes anterior el primer día del mes',ME,'DERIVADA TECH',40,[['TEC-1140','EN CURSO','Medium','Célula Datos','Rocío Medina',8,'Sprint 32']]],
+ ['AP-1474','Backoffice | Mejorar mensaje cuando falta el número de documento','Diego Ferraro','DERIVADA TECH',12,[]],
+ ['AP-1477','App móvil | Texto cortado en el comprobante','Martín Ríos','RESUELTA',200,[['TEC-1088','COMPLETADO','Low','Célula Mobile','Iván Correa',210,'']]],
+ ['AP-1480','Portal | El filtro por estado no recuerda la última selección','Lucía Gómez','RESUELTA',150,[['TEC-1095','COMPLETADO','Low','Desarrollo','Tomás Ibarra',160,'']]],
+ ['AP-1484','Backoffice | Consultas | La búsqueda tarda más de 10 segundos con filtros',ME,'DERIVADA TECH',9,[['TEC-1160','EN CURSO','High','Célula Datos','Valentina Soto',2,'Sprint 32']]],
+ ['AP-1486','Portal | Nueva regla de redondeo en importes parciales','Diego Ferraro','EN ANÁLISIS',34,[]],
+];
+const DATA=RAW.map(([k,s,a,st,u,t])=>({k,s,a,st,u,tech:t.map(([k,st,p,c,who,u,sp])=>({k,st,p,c,who,u,sp}))}));
+const cat=x=>{if(x.st==='DESESTIMADA')return'canc';if(x.st==='RESUELTA')return'done';if(x.st==='EN ANÁLISIS')return'ana';if(!x.tech.length)return'none';return x.tech.every(t=>t.st==='COMPLETADO')?'prod':'work'};
+// similitud por texto (Jaccard sobre palabras)
+const STOP=new Set('de la el en al del los las un una y o a por para con sin que se es no mes'.split(' '));
+const toks=s=>new Set(s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').split(/[^a-z0-9]+/).filter(w=>w.length>2&&!STOP.has(w)));
+DATA.forEach(x=>x._t=toks(x.s));
+DATA.forEach(x=>{x.sim=DATA.filter(y=>y!==x).map(y=>{const a=x._t,b=y._t;let i=0;a.forEach(w=>b.has(w)&&i++);return{k:y.k,p:Math.round(100*i/(a.size+b.size-i))}}).filter(o=>o.p>=30).sort((a,b)=>b.p-a.p).slice(0,3)});
+let sel=new Set([...AGENTS]), tile='all', q='', canc=false, sort='upd', asc=true;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ago=h=>h<1?'hace un momento':h<24?'hace '+h+(h===1?' hora':' horas'):h<48?'ayer':h<72?'anteayer':h<24*45?'hace '+Math.round(h/24)+' días':'hace '+Math.round(h/720)+' meses';
+const TILES=[['all','Todos',x=>cat(x)!=='canc'||canc],['act','Activos',x=>!['done','canc'].includes(cat(x))],['none','No tomados por Tech',x=>cat(x)==='none'],['work','Tech trabajando',x=>cat(x)==='work'],['prod','Tech en producción',x=>cat(x)==='prod'],['done','Finalizados',x=>cat(x)==='done']];
+const RANK={none:0,ana:1,work:2,prod:3,done:4,canc:5};
+function base(){return DATA.filter(x=>sel.has(x.a)).filter(x=>canc||cat(x)!=='canc').filter(x=>{const qq=q.trim().toLowerCase();return !qq||[x.k,x.s,x.st,x.a,...x.tech.flatMap(t=>[t.k,t.st,t.c,t.who])].join(' ').toLowerCase().includes(qq)})}
+function rows(){const fn=TILES.find(t=>t[0]===tile)[2];const r=base().filter(fn);
+  const cmp={tech:(a,b)=>RANK[cat(a)]-RANK[cat(b)]||a.u-b.u,upd:(a,b)=>a.u-b.u,key:(a,b)=>a.k.localeCompare(b.k),agent:(a,b)=>a.a.localeCompare(b.a)||a.u-b.u}[sort];
+  r.sort(cmp); if(!asc) r.reverse(); return r}
+const stCls={'DERIVADA TECH':'s-der','EN ANÁLISIS':'s-ana','RESUELTA':'s-res','DESESTIMADA':'s-des'};
+const tCls={BACKLOG:'t-backlog','EN CURSO':'t-curso','EN REVISIÓN':'t-rev',COMPLETADO:'t-ok'};
+const pCls={High:'pH',Medium:'pM',Low:'pL'}, pIco={High:'↑',Medium:'=',Low:'↓'};
+function techHTML(x){
+  if(!x.tech.length) return x.st==='EN ANÁLISIS'?'<span class="sub">Todavía en análisis, sin derivar</span>':'<span class="none">⚠ Sin ticket de Tech vinculado</span>';
+  return x.tech.map(t=>'<div class="tc'+(t.sp?' sprint':'')+'"><div class="tc-top"><a class="lnk" data-open="'+t.k+'">'+t.k+'</a><span class="chipst '+tCls[t.st]+'">'+t.st+'</span>'+(t.sp?'<span class="spr">▶ '+esc(t.sp)+'</span>':'')+
+    '<span class="tc-who">'+(t.who?esc(t.who):'Sin asignar')+' · act. '+ago(t.u)+'</span></div>'+
+    '<div class="mini"><span class="'+pCls[t.p]+'">'+pIco[t.p]+' '+t.p+'</span><span>👤 '+esc(t.c)+'</span></div>'+
+    '<div class="rel">relates to · '+esc(x.s)+'</div></div>').join('')}
+function render(){
+  $('agents').innerHTML='Agentes: '+AGENTS.map(a=>'<button type="button" class="agent" aria-pressed="'+sel.has(a)+'" data-a="'+esc(a)+'">'+(sel.has(a)?'✓ ':'')+esc(a)+(a===ME?' (vos)':'')+'</button>').join('');
+  const b=base();
+  $('tiles').innerHTML=TILES.map(([id,l,fn])=>'<button type="button" class="tile" data-c="'+id+'" aria-pressed="'+(id===tile)+'"><b>'+b.filter(fn).length+'</b>'+l+'</button>').join('');
+  const r=rows();
+  $('thTech').innerHTML='Ticket(s) de Tech y estado'+(sort==='tech'?' <span class="sorted">'+(asc?'▲':'▼')+'</span>':'');
+  $('rows').innerHTML=r.length?r.map(x=>'<div class="tr"><div><a class="lnk" data-open="'+x.k+'">'+x.k+'</a><div class="sumg">'+esc(x.s)+'</div><div class="sub">Actualizado '+ago(x.u)+'</div>'+
+    (x.sim.length?'<div class="sim">≈ Puede ser similar a: '+x.sim.map(s=>'<a class="lnk" data-open="'+s.k+'">'+s.k+'</a> ('+s.p+'% parecido)').join(', ')+'</div>':'')+
+    '<a class="lnk find" data-find="'+x.k+'">🔍 Buscar similares en todo el proyecto</a></div>'+
+    '<div><span class="lbl">Agente</span>'+esc(x.a)+'</div><div><span class="lbl">Estado</span><span class="chipst '+stCls[x.st]+'">'+x.st+'</span></div><div>'+techHTML(x)+'</div></div>').join('')
+    :'<div class="empty">No hay tickets con estos filtros.</div>';
+  $('dir').textContent=asc?'▲':'▼';
+}
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2400)}
+$('agents').addEventListener('click',e=>{const b=e.target.closest('.agent');if(!b)return;const a=b.dataset.a;if(sel.has(a)){if(sel.size>1)sel.delete(a);else toast('Tiene que quedar al menos un agente')}else sel.add(a);render()});
+$('tiles').addEventListener('click',e=>{const b=e.target.closest('.tile');if(!b)return;tile=b.dataset.c;render()});
+$('rows').addEventListener('click',e=>{const o=e.target.closest('[data-open]');if(o){toast('En la extensión real, abre '+o.dataset.open+' en Jira.');return}
+  const f=e.target.closest('[data-find]');if(f){const x=DATA.find(d=>d.k===f.dataset.find);toast(x.sim.length?'Encontrados '+x.sim.length+' parecidos a '+x.k+' (demo)':'No hay tickets parecidos a '+x.k)}});
+$('q').addEventListener('input',e=>{q=e.target.value;render()});
+$('canc').addEventListener('change',e=>{canc=e.target.checked;render()});
+$('sort').addEventListener('change',e=>{sort=e.target.value;render()});
+$('dir').addEventListener('click',()=>{asc=!asc;render()});
+const root=document.documentElement;
+function setTheme(t){root.setAttribute('data-theme',t);$('theme').textContent=t==='dark'?'☀ Claro':'☾ Oscuro';try{localStorage.setItem('et-theme',t)}catch(e){}}
+let saved=null;try{saved=localStorage.getItem('et-theme')}catch(e){}
+setTheme(saved||'dark');
+$('theme').addEventListener('click',()=>setTheme(root.getAttribute('data-theme')==='dark'?'light':'dark'));
+$('cfg').addEventListener('click',()=>toast('En la extensión real: proyecto, agentes del equipo y columnas.'));
+$('refresh').addEventListener('click',()=>{const b=$('refresh');b.disabled=true;b.innerHTML='<span class="spin"></span> Actualizando';
+  setTimeout(()=>{b.disabled=false;b.textContent='Actualizar';render();toast('Lista actualizada (datos de ejemplo)')},800)});
+$('xls').addEventListener('click',()=>{const r=rows(),qq=v=>'"'+String(v).replace(/"/g,'""')+'"';
+  const lines=['Ticket;Resumen;Agente;Estado;Ticket Tech;Estado Tech;Prioridad;Célula;Responsable;Sprint'];
+  r.forEach(x=>{(x.tech.length?x.tech:[{k:'',st:'',p:'',c:'',who:'',sp:''}]).forEach(t=>lines.push([x.k,x.s,x.a,x.st,t.k,t.st,t.p,t.c,t.who,t.sp].map(qq).join(';')))});
+  try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}));a.download='estado-tech-demo.csv';document.body.appendChild(a);a.click();a.remove();toast('Descargado: estado-tech-demo.csv')}catch(e){toast('No se pudo descargar en este navegador')}});
+render();
+</script>
+</body>
+</html>
